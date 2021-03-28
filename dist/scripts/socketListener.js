@@ -9,6 +9,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 import { handleDroppedCard } from './drop.js';
 import { ViewJournalPile, DiscardJournalPile } from './DeckForm.js';
+export function getGmId() {
+    var gmPlayer = game.users.find(el => el.isGM && el.active);
+    if (!gmPlayer) {
+        throw new Error("A GM must be present for this action.");
+    }
+    return gmPlayer.id;
+}
 Hooks.on("ready", () => {
     //@ts-ignore
     game.socket.on('module.cardsupport', (data) => __awaiter(void 0, void 0, void 0, function* () {
@@ -43,8 +50,8 @@ Hooks.on("ready", () => {
             game.journal.get(data.cardID).show("image", true);
         }
         else if ((data === null || data === void 0 ? void 0 : data.type) == "DROP") {
-            handleDroppedCard(data.cardID, data.x, data.y, data.alt);
-            //handleTokenCard(data.cardID, data.x, data.y, data.alt)
+            handleDroppedCard(data.cardID, data.x, data.y, data.alt, data.sideUp);
+            //handleTokenCard(data.cardID, data.x, data.y, data.alt, data.sideUp)
         }
         else if ((data === null || data === void 0 ? void 0 : data.type) == "TAKECARD") {
             let img = ui['cardHotbar'].macros[data.cardNum - 1].icon;
@@ -65,7 +72,7 @@ Hooks.on("ready", () => {
                             else {
                                 let msg = {
                                     type: "GIVE",
-                                    playerID: game.users.find(el => el.isGM && el.active).id,
+                                    playerID: getGmId(),
                                     to: data.cardRequester,
                                     cardID: macro.getFlag("world", "cardID")
                                 };

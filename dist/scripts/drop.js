@@ -9,6 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 import { mod_scope } from "./constants.js";
 import { cardHotbarSettings } from '../cardhotbar/scripts/card-hotbar-settings.js';
+import { getGmId } from './socketListener.js';
 // Add the listener to the board html element
 Hooks.once("canvasReady", () => {
     document.getElementById("board").addEventListener("drop", (event) => __awaiter(void 0, void 0, void 0, function* () {
@@ -27,11 +28,12 @@ Hooks.once("canvasReady", () => {
                 else {
                     let msg = {
                         type: "DROP",
-                        playerID: game.users.find(el => el.isGM && el.active).id,
+                        playerID: getGmId(),
                         cardID: data.id,
                         x: event.clientX,
                         y: event.clientY,
-                        alt: event.altKey
+                        alt: event.altKey,
+                        sideUp: ""
                     };
                     //@ts-ignore
                     game.socket.emit('module.cardsupport', msg);
@@ -46,11 +48,12 @@ Hooks.once("canvasReady", () => {
                 else {
                     let msg = {
                         type: "DROP",
-                        playerID: game.users.find(el => el.isGM && el.active).id,
+                        playerID: getGmId(),
                         cardID: game.macros.get(data.id).getFlag(mod_scope, "cardID"),
                         x: event.clientX,
                         y: event.clientY,
-                        alt: event.altKey
+                        alt: event.altKey,
+                        sideUp: game.macros.get(data.id).getFlag(mod_scope, "sideUp")
                     };
                     //@ts-ignore
                     game.socket.emit('module.cardsupport', msg);
@@ -124,14 +127,15 @@ export function handleDroppedCard(cardID, x, y, alt, sideUp = "front") {
         let t = canvas.tiles.worldTransform;
         const _x = (x - t.tx) / canvas.stage.scale.x;
         const _y = (y - t.ty) / canvas.stage.scale.y;
-        const cardScale = cardHotbarSettings.getCHBCardScale();
-        console.debug(cardScale);
+        const cardScaleX = cardHotbarSettings.getCHBCardScaleX();
+        const cardScaleY = cardHotbarSettings.getCHBCardScaleY();
+        console.debug(cardScaleX + " " + cardScaleY);
         yield Tile.create({
             img: imgPath,
             x: _x,
             y: _y,
-            width: _width * cardScale,
-            height: _height * cardScale,
+            width: _width * cardScaleX,
+            height: _height * cardScaleY,
             flags: {
                 [mod_scope]: {
                     "cardID": `${cardID}`,
@@ -140,8 +144,7 @@ export function handleDroppedCard(cardID, x, y, alt, sideUp = "front") {
         });
     });
 }
-/*
-export async function handleTokenCard(cardID:string, x:number, y:number, alt:boolean, sideUp="front"){
+/*export async function handleTokenCard(cardID:string, x:number, y:number, alt:boolean, sideUp="front"){
   let imgPath = "";
   if(alt || sideUp == "back"){
     imgPath = game.journal.get(cardID).getFlag(mod_scope, "cardBack")
@@ -151,23 +154,24 @@ export async function handleTokenCard(cardID:string, x:number, y:number, alt:boo
 
   // Determine the Tile Size:
   const tex = await loadTexture(imgPath);
-  const _width = tex.width;
-  const _height = tex.height;
+  const _width = tex.width / canvas.dimensions.size;
+  const _height = tex.height / canvas.dimensions.size;
 
   // Project the tile Position
   let t = canvas.tiles.worldTransform;
   const _x = (x - t.tx) / canvas.stage.scale.x
   const _y = (y - t.ty) / canvas.stage.scale.y
 
-  const cardScale = cardHotbarSettings.getCHBCardScale();
-  console.debug(cardScale);
+  const cardScaleX = cardHotbarSettings.getCHBCardScaleX();
+  const cardScaleY = cardHotbarSettings.getCHBCardScaleY();
+  console.debug(cardScaleX + " " + cardScaleY);
   await Token.create({
     name: "Card",
     img: imgPath,
     x: _x,
     y: _y,
-    width: 2 * cardScale,//_width * cardScale,
-    height: 3 * cardScale, //_height * cardScale,
+    width: _width * cardScaleX,
+    height: _height * cardScaleY,
     permissions: 3,
     flags: {
       [mod_scope]: {
@@ -175,5 +179,4 @@ export async function handleTokenCard(cardID:string, x:number, y:number, alt:boo
       }
     }
   })
-}
-*/ 
+}*/ 

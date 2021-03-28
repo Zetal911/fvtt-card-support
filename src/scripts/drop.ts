@@ -23,7 +23,8 @@ Hooks.once("canvasReady", () => {
             cardID: data.id,
             x: event.clientX, 
             y: event.clientY, 
-            alt: event.altKey
+            alt: event.altKey,
+            sideUp: ""
           }
           //@ts-ignore
           game.socket.emit('module.cardsupport', msg)
@@ -46,7 +47,8 @@ Hooks.once("canvasReady", () => {
             cardID: game.macros.get(data.id).getFlag(mod_scope, "cardID"),
             x: event.clientX, 
             y: event.clientY, 
-            alt: event.altKey
+            alt: event.altKey,
+            sideUp: game.macros.get(data.id).getFlag(mod_scope, "sideUp")
           }
           //@ts-ignore
           game.socket.emit('module.cardsupport', msg)
@@ -102,7 +104,8 @@ async function handleDroppedFolder(folderId, x, y){
   })
 }
 
-export async function handleDroppedCard(cardID:string, x:number, y:number, alt:boolean, sideUp="front"){
+// for Journal cards
+/*export async function handleDroppedCard(cardID:string, x:number, y:number, alt:boolean, sideUp="front"){
   let imgPath = "";
   if(alt || sideUp == "back"){
     imgPath = game.journal.get(cardID).getFlag(mod_scope, "cardBack")
@@ -135,9 +138,10 @@ export async function handleDroppedCard(cardID:string, x:number, y:number, alt:b
       }
     }
   })
-}
+}*/
 
-/*export async function handleTokenCard(cardID:string, x:number, y:number, alt:boolean, sideUp="front"){
+// for Token cards
+export async function handleDroppedCard(cardID:string, x:number, y:number, alt:boolean, sideUp="front"){
   let imgPath = "";
   if(alt || sideUp == "back"){
     imgPath = game.journal.get(cardID).getFlag(mod_scope, "cardBack")
@@ -172,4 +176,4 @@ export async function handleDroppedCard(cardID:string, x:number, y:number, alt:b
       }
     }
   })
-}*/
+}

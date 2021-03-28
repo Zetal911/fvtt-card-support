@@ -1,0 +1,44 @@
+Card Layer
+    Players can interact
+
+    Extend Token layer? (the Roofs module extends Tiles, but those can’t be interacted by players, obviously)
+
+        Could use tokens, but store them within a separate list, so never actually hook them into the Tokens list? What would that even do? Would they render, be interactable?
+
+        What if we created a new PlaceableObject from scratch? I’m not sure if the Server code (which I can’t view) supports that  
+
+    Card on top of a card stacks the deck
+
+    Click and drag off of a deck/card pulls one off the top
+
+    Click+Hold and Drag to move entire deck (+ some graphical indicator that you’ve grabbed the whole thing) (maybe ctrl+hold instead?)
+
+    Middle-click to flip held card
+
+    Double-click to move into Hand
+
+    Configurable permissions for what actions users are allowed to take, + config for hold time, etc.
+
+ 
+
+Hand Changes
+
+    Playing a flipped card from hand should play it AS flipped, instead of needing to hold alt
+
+    Middle-click flips moused card
+
+Preview Zoom layer
+
+    Hold Alt to create a zoomed sprite of the Token/Card you’re moused over, which instantly disappears when you let go of alt
+
+    Should work in Hand as well
+    
+Issues:
+    Token rendering order lacks a persistent Z-Layer property
+        (This can be fixed by created an extended Card data-type that persists Z-layer data, and replaces existing PIXI rendering with its own variant, like how Roofs module does it)
+    Unwanted, weird behaviors. Like Token Tooltips firing or Health Estimate saying that your 2 of clubs is uninjured, or having a hostile border by default and having Token Mold try to give it a randomly generated name
+        (This is tougher, but at least we could 'return false' on HUD hook+clear html and call our own Card render hook, and prevent access to stats/other token stuff for Cards)
+
+Ask on blender stackexchange for help with Patamon - Wings modeling?
+
+

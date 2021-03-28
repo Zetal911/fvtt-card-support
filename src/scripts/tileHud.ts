@@ -5,15 +5,25 @@ import { Texture } from 'pixi.js';
 import { getGmId } from './socketListener.js';
 
 Hooks.on('renderTileHUD', (tileHUD, html, options) => {
-  //console.log(tileHUD);
-  //console.log(options.flags);
+  var isCard = options.flags?.[mod_scope]?.cardID != undefined;
+  var isDeck = options.flags?.[mod_scope]?.deckID != undefined;
+  if(isCard || isDeck) {
+    Hooks.call('renderCardHUD', tileHUD, html, options);
+    return false;
+  }
+});
 
-  if(options.flags?.[mod_scope]?.cardID != undefined){
+Hooks.on('renderCardHUD', (tileHUD, html, options) => {
+  html.find('.left').empty();    
+
+  var isCard = options.flags?.[mod_scope]?.cardID != undefined;
+  var isDeck = options.flags?.[mod_scope]?.deckID != undefined;
+  if(isCard){
     cardHUD(tileHUD, html);
-  } else if (options.flags?.[mod_scope]?.deckID != undefined){
+  } else if (isDeck){
     deckHUD(tileHUD.object.data, html)
   }
-})
+});
 
 async function cardHUD(tileHUD, html) {
   const handDiv = $('<i class="control-icon fa fa-hand-paper" aria-hidden="true" title="Take"></i>')

@@ -9,14 +9,25 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 import { mod_scope } from './constants.js';
 import { cardHotbarSettings } from '../cardhotbar/scripts/card-hotbar-settings.js';
+import { getGmId } from './socketListener.js';
 Hooks.on('renderTileHUD', (tileHUD, html, options) => {
-    //console.log(tileHUD);
-    //console.log(options.flags);
     var _a, _b, _c, _d;
-    if (((_b = (_a = options.flags) === null || _a === void 0 ? void 0 : _a[mod_scope]) === null || _b === void 0 ? void 0 : _b.cardID) != undefined) {
+    var isCard = ((_b = (_a = options.flags) === null || _a === void 0 ? void 0 : _a[mod_scope]) === null || _b === void 0 ? void 0 : _b.cardID) != undefined;
+    var isDeck = ((_d = (_c = options.flags) === null || _c === void 0 ? void 0 : _c[mod_scope]) === null || _d === void 0 ? void 0 : _d.deckID) != undefined;
+    if (isCard || isDeck) {
+        Hooks.call('renderCardHUD', tileHUD, html, options);
+        return false;
+    }
+});
+Hooks.on('renderCardHUD', (tileHUD, html, options) => {
+    var _a, _b, _c, _d;
+    html.find('.left').empty();
+    var isCard = ((_b = (_a = options.flags) === null || _a === void 0 ? void 0 : _a[mod_scope]) === null || _b === void 0 ? void 0 : _b.cardID) != undefined;
+    var isDeck = ((_d = (_c = options.flags) === null || _c === void 0 ? void 0 : _c[mod_scope]) === null || _d === void 0 ? void 0 : _d.deckID) != undefined;
+    if (isCard) {
         cardHUD(tileHUD, html);
     }
-    else if (((_d = (_c = options.flags) === null || _c === void 0 ? void 0 : _c[mod_scope]) === null || _d === void 0 ? void 0 : _d.deckID) != undefined) {
+    else if (isDeck) {
         deckHUD(tileHUD.object.data, html);
     }
 });
@@ -109,7 +120,7 @@ function cardHUD(tileHUD, html) {
                             else {
                                 let msg = {
                                     type: "GIVE",
-                                    playerID: game.users.find(el => el.isGM && el.active).id,
+                                    playerID: getGmId(),
                                     to: _to,
                                     cardID: td.flags[mod_scope].cardID
                                 };
@@ -207,8 +218,8 @@ function deckHUD(td, html) {
                                             x: html.find("#deckX")[0].value,
                                             y: html.find("#deckY")[0].value,
                                             z: 100 + i,
-                                            width: tex.width * cardHotbarSettings.getCHBCardScale(),
-                                            height: tex.height * cardHotbarSettings.getCHBCardScale(),
+                                            width: tex.width * cardHotbarSettings.getCHBCardScaleX(),
+                                            height: tex.height * cardHotbarSettings.getCHBCardScaleY(),
                                             flags: {
                                                 [mod_scope]: {
                                                     "cardID": card
@@ -235,8 +246,8 @@ function deckHUD(td, html) {
                                             x: html.find("#deckX")[0].value,
                                             y: html.find("#deckY")[0].value,
                                             z: 100 + i,
-                                            width: tex.width * cardHotbarSettings.getCHBCardScale(),
-                                            height: tex.height * cardHotbarSettings.getCHBCardScale(),
+                                            width: tex.width * cardHotbarSettings.getCHBCardScaleX(),
+                                            height: tex.height * cardHotbarSettings.getCHBCardScaleY(),
                                             flags: {
                                                 [mod_scope]: {
                                                     "cardID": card

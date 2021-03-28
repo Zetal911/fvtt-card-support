@@ -34,8 +34,8 @@ Hooks.on("ready", () => {
     } else if (data?.type == "REVEALCARD"){
       game.journal.get(data.cardID).show("image", true);
     } else if (data?.type == "DROP"){
-      handleDroppedCard(data.cardID, data.x, data.y, data.alt)
-      //handleTokenCard(data.cardID, data.x, data.y, data.alt)
+      handleDroppedCard(data.cardID, data.x, data.y, data.alt, data.sideUp);
+      //handleTokenCard(data.cardID, data.x, data.y, data.alt, data.sideUp)
     } else if (data?.type == "TAKECARD") {
       let img = ui['cardHotbar'].macros[data.cardNum-1].icon
       let macro = ui['cardHotbar'].macros[data.cardNum-1].macro
@@ -289,6 +289,7 @@ export interface MSG_DROPTILE {
   cardID: string,
   x: number, 
   y: number,
-  alt: boolean
+  alt: boolean,
+  sideUp: string
 }
 

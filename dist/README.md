@@ -1,5 +1,7 @@
 # Card Support for Foundry VTT
 
+**IMPORTANT NOTE:** In initial testing, Card Support seems more or less compatible with 0.75, though Norc has an issue that only seems to affect him. Thanks in an advance for reporting any issues that you may come across in 0.7.5. We'll iron out any new issues and release an official 0.7.5 version as soon as we can, thanks for your patience.
+
 ## Usage Instructions
 1. Click the "SDF Import" Button in the Journal tab of the Sidebar (see gif).
 2. Select a valid SDF zip file. Samples are located in "data/modules/cardsupport/samples" (more on SDF below)

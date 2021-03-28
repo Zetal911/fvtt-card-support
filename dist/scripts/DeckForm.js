@@ -7,6 +7,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+import { getGmId } from './socketListener.js';
 import { ViewPile, DiscardPile } from './tileHud.js';
 export class DeckForm extends FormApplication {
     constructor(obj, opts = {}) {
@@ -62,7 +63,7 @@ export class DeckForm extends FormApplication {
                                     else {
                                         let msg = {
                                             type: "DRAWCARDS",
-                                            playerID: game.users.find(el => el.isGM && el.active).id,
+                                            playerID: getGmId(),
                                             receiverID: game.user.id,
                                             deckID: html.find("#deckID")[0].value,
                                             numCards: html.find("#numCards")[0].value,
@@ -108,7 +109,7 @@ export class DeckForm extends FormApplication {
                                         // send a socket request to request journal entries
                                         let msg = {
                                             type: "REQUESTVIEWCARDS",
-                                            playerID: game.users.find(el => el.isGM && el.active).id,
+                                            playerID: getGmId(),
                                             requesterID: game.user.id,
                                             deckID: deck.deckID,
                                             viewNum: html.find("#numCards")[0].value
@@ -350,7 +351,7 @@ export class DiscardJournalPile extends FormApplication {
                 html.find(`#${cardID}-burn`).click(() => {
                     let msg = {
                         type: "REMOVECARDFROMDISCARD",
-                        playerID: game.users.find(el => el.isGM && el.active).id,
+                        playerID: getGmId(),
                         deckID: this.deckID,
                         cardID: cardID
                     };
@@ -374,7 +375,7 @@ export class DiscardJournalPile extends FormApplication {
                 html.find(`#${cardID}-topdeck`).click(() => {
                     let msg = {
                         type: "CARDTOPDECK",
-                        playerID: game.users.find(el => el.isGM && el.active).id,
+                        playerID: getGmId(),
                         deckID: this.deckID,
                         cardID: cardID
                     };
@@ -399,7 +400,7 @@ export class DiscardJournalPile extends FormApplication {
             html.find(`#shuffleBack`).click(() => {
                 let msg = {
                     type: "SHUFFLEBACKDISCARD",
-                    playerID: game.users.find(el => el.isGM && el.active).id,
+                    playerID: getGmId(),
                     deckID: this.deckID
                 };
                 //@ts-ignore
