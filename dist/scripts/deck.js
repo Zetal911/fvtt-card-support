@@ -8,6 +8,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 import { mod_scope } from './constants.js';
+import * as EMITTER from './socketEmitter.js';
 export class Deck {
     /**
      * Builds a Deck Object
@@ -50,21 +51,11 @@ export class Deck {
                     if (user.isSelf) {
                         continue;
                     }
-                    //@ts-ignore
-                    game.socket.emit('module.cardsupport', {
-                        type: "SETDECKS",
-                        playerID: user.id,
-                    });
+                    EMITTER.sendSetDecksMsg(user.id);
                 }
             }
             else {
-                let msg = {
-                    type: "UPDATESTATE",
-                    playerID: game.users.find(el => el.isGM && el.data.active).id,
-                    deckID: this.deckID
-                };
-                //@ts-ignore
-                game.socket.emit('module.cardsupport', msg);
+                EMITTER.sendUpdateStateMsg(game.users.find(el => el.isGM && el.data.active).id, this.deckID);
             }
         });
     }
@@ -130,13 +121,7 @@ export class Deck {
                         ui['cardHotbar'].populator.resetDeck(this.deckID);
                     }
                     else {
-                        let resetMsg = {
-                            type: "RESETDECK",
-                            playerID: user.id,
-                            deckID: this.deckID
-                        };
-                        //@ts-ignore
-                        game.socket.emit('module.cardsupport', resetMsg);
+                        EMITTER.sendResetDeckMsg(user.id, this.deckID);
                     }
                 }
                 yield this.updateState();
@@ -255,13 +240,7 @@ export class Deck {
                     ui['cardHotbar'].populator.addToPlayerHand(cards);
                 }
                 else {
-                    let msg = {
-                        type: "DEAL",
-                        playerID: playerID,
-                        cards: cards
-                    };
-                    //@ts-ignore
-                    game.socket.emit('module.cardsupport', msg);
+                    EMITTER.sendDealMsg(playerID, cards);
                 }
                 resolve();
             }));
@@ -514,13 +493,7 @@ export class Decks {
             console.error("This function can only be called by the GM");
             return;
         }
-        let msg = {
-            type: "DEAL",
-            playerID: playerID,
-            cards: [game.journal.get(cardID)]
-        };
-        //@ts-ignore
-        game.socket.emit('module.cardsupport', msg);
+        EMITTER.sendDealMsg(playerID, [game.journal.get(cardID)]);
     }
 }
 /**

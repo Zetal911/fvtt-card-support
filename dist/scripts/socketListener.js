@@ -9,6 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 import { handleDroppedCard } from './drop.js';
 import { ViewJournalPile, DiscardJournalPile } from './DeckForm.js';
+import * as EMITTER from './socketEmitter.js';
 export function getGmId() {
     var gmPlayer = game.users.find(el => el.isGM && el.active);
     if (!gmPlayer) {
@@ -19,7 +20,7 @@ export function getGmId() {
 Hooks.on("ready", () => {
     //@ts-ignore
     game.socket.on('module.cardsupport', (data) => __awaiter(void 0, void 0, void 0, function* () {
-        console.log("Socket Recieved: ", data);
+        console.log("Socket Received: ", data);
         if (data.playerID != game.user.id) {
             return;
         }
@@ -51,46 +52,12 @@ Hooks.on("ready", () => {
         }
         else if ((data === null || data === void 0 ? void 0 : data.type) == "DROP") {
             handleDroppedCard(data.cardID, data.x, data.y, data.alt, data.sideUp);
-            //handleTokenCard(data.cardID, data.x, data.y, data.alt, data.sideUp)
         }
-        else if ((data === null || data === void 0 ? void 0 : data.type) == "TAKECARD") {
-            let img = ui['cardHotbar'].macros[data.cardNum - 1].icon;
-            let macro = ui['cardHotbar'].macros[data.cardNum - 1].macro;
-            let tex = yield loadTexture(img);
-            new Dialog({
-                title: `${game.users.get(data.playerID).data.name} is requesting a card`,
-                content: `
-          <img src="${img}"></img>        
-        `,
-                buttons: {
-                    accept: {
-                        label: "Accept",
-                        callback: () => __awaiter(void 0, void 0, void 0, function* () {
-                            if (game.user.isGM) {
-                                game.decks.giveToPlayer(data.cardRequester, macro.getFlag("world", "cardID"));
-                            }
-                            else {
-                                let msg = {
-                                    type: "GIVE",
-                                    playerID: getGmId(),
-                                    to: data.cardRequester,
-                                    cardID: macro.getFlag("world", "cardID")
-                                };
-                                //@ts-ignore
-                                game.socket.emit('module.cardsupport', msg);
-                            }
-                            //delete the macro in hand
-                            yield ui['cardHotbar'].populator.chbUnsetMacro(data.cardNum);
-                        })
-                    },
-                    decline: {
-                        label: "Decline"
-                    }
-                }
-            }, {
-                height: tex.height,
-                width: tex.width
-            }).render(true);
+        else if ((data === null || data === void 0 ? void 0 : data.type) == "REMOVECARD") {
+            canvas.tokens.get(data.tokenID).delete();
+        }
+        else if ((data === null || data === void 0 ? void 0 : data.type) == "REQUESTTAKECARD") {
+            requestTakeCard(data);
         }
         else if ((data === null || data === void 0 ? void 0 : data.type) == "DRAWCARDS") {
             game.decks.get(data.deckID).dealToPlayer(data.receiverID, data.numCards, data.replacement);
@@ -102,14 +69,7 @@ Hooks.on("ready", () => {
             cards = cardIDs.map(el => {
                 return game.journal.get(el);
             }).reverse();
-            let reply = {
-                type: "VIEWCARDS",
-                playerID: data.requesterID,
-                deckID: data.deckID,
-                cards: cards
-            };
-            //@ts-ignore
-            game.socket.emit('module.cardsupport', reply);
+            EMITTER.sendViewCardsMsg(data.requesterID, data.deckID, cards);
         }
         else if ((data === null || data === void 0 ? void 0 : data.type) == "VIEWCARDS") {
             new ViewJournalPile({
@@ -128,14 +88,7 @@ Hooks.on("ready", () => {
             cards = game.decks.get(data.deckID)._discard.map(el => {
                 return game.journal.get(el);
             });
-            let reply = {
-                type: "VIEWDISCARD",
-                playerID: data.requesterID,
-                deckID: data.deckID,
-                cards: cards
-            };
-            //@ts-ignore
-            game.socket.emit('module.cardsupport', reply);
+            EMITTER.sendViewDiscardMsg(data.requesterID, data.deckID, cards);
         }
         else if ((data === null || data === void 0 ? void 0 : data.type) == "VIEWDISCARD") {
             new DiscardJournalPile({
@@ -159,13 +112,41 @@ Hooks.on("ready", () => {
             cards = cardIDs.map(el => {
                 return game.journal.get(el);
             }).reverse();
-            let msg = {
-                type: "RECEIVECARDSBYDECK",
-                playerID: data.to,
-                cards: cards,
-                deckID: data.deckID
-            };
-            game.socket.emit('module.cardsupport', msg);
+            //sendReceiveCardsByDeckMsg(data.to, cards, data.deckID);
         }
     }));
 });
+function requestTakeCard(data) {
+    return __awaiter(this, void 0, void 0, function* () {
+        let img = ui['cardHotbar'].macros[data.cardNum - 1].icon;
+        let macro = ui['cardHotbar'].macros[data.cardNum - 1].macro;
+        let tex = yield loadTexture(img);
+        new Dialog({
+            title: `${game.users.get(data.playerID).data.name} is requesting a card`,
+            content: `
+      <img src="${img}"></img>        
+    `,
+            buttons: {
+                accept: {
+                    label: "Accept",
+                    callback: () => __awaiter(this, void 0, void 0, function* () {
+                        if (game.user.isGM) {
+                            game.decks.giveToPlayer(data.cardRequester, macro.getFlag("world", "cardID"));
+                        }
+                        else {
+                            EMITTER.sendGiveMsg(getGmId(), data.cardRequester, macro.getFlag("world", "cardID"));
+                        }
+                        //delete the macro in hand
+                        yield ui['cardHotbar'].populator.chbUnsetMacro(data.cardNum);
+                    })
+                },
+                decline: {
+                    label: "Decline"
+                }
+            }
+        }, {
+            height: tex.height,
+            width: tex.width
+        }).render(true);
+    });
+}

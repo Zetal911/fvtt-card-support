@@ -1,4 +1,5 @@
 //import { Deck } from "../scripts/deck.js";
+import * as EMITTER from '../../scripts/socketEmitter.js';
 
 export class cardHotbarPopulator {
     constructor() { 
@@ -214,14 +215,14 @@ export class cardHotbarPopulator {
         `
 
         new Dialog({
-            name: "Take Card From Player",
+            name: "Request Card From Player",
             content: dialogHTML, 
             buttons: {
                 take: {
                     label: "Request",
                     callback: (html) => {
                         let socketMsg = {
-                            type: "TAKECARD",
+                            type: "REQUESTTAKECARD",
                             playerID: html.find("#playerID")[0].value,
                             cardRequester: game.user.id,
                             cardNum: html.find("#cardNum")[0].value
@@ -255,7 +256,7 @@ export class cardHotbarPopulator {
                     callback: (dlg) => {
                         ui.notifications.notify("Discarding entire hand");
                         console.debug("Card Hotbar | discarding entire hand");
-                        ///try {
+                        try {
                             for (let mId of ui.cardHotbar.populator.macroMap) {
                                 const m = game.macros.get(mId);
                                 console.debug(m)
@@ -267,16 +268,8 @@ export class cardHotbarPopulator {
                                         console.debug(mDeck);
                                         if (mDeck) {
                                             //console.debug("Card Hotbar | Discarding card (macro, deck)...");
-                                            //console.debug(m);
-                                            //console.debug(mDeck);
-                                            //mDeck.discardCard(mCardId);
                                             if(!game.user.isGM){
-                                                let socketMsg = {
-                                                  type: "DISCARD",
-                                                  playerID: game.users.find(el => el.isGM && el.data.active).id,
-                                                  cardID: mCardId
-                                                }
-                                                game.socket.emit('module.cardsupport', socketMsg);
+                                                EMITTER.sendDiscardMsg(game.users.find(el => el.isGM && el.data.active).id, mCardId);
                                             } else {
                                                 game.decks.getByCard(mCardId).discardCard(mCardId)
                                             }
@@ -285,11 +278,11 @@ export class cardHotbarPopulator {
                                     m.delete();
                                 }
                             }  
-                        //} catch (error) {
-                            //const msg = "Issue found with hand data, resetting hand to try solve it...";                           
-                            //console.debug("Card Hotbar | " + msg);
+                        } catch (error) {
+                            const msg = "Issue found with hand data, resetting hand to try solve it...";                           
+                            console.debug("Card Hotbar | " + msg);
                             //ui.notifications.notify(msg);
-                        //}
+                        }
                         ui.cardHotbar.populator.chbResetMacros();
                     }
                 },

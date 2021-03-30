@@ -2,6 +2,7 @@
 import {DeckForm} from '../scripts/DeckForm.js';
 import { getGmId } from '../scripts/socketListener.js';
 //import { updateIdentifier } from 'typescript';
+import * as EMITTER from '../scripts/socketEmitter.js';
 
 export class cardHotbar extends Hotbar {
     /**
@@ -305,11 +306,7 @@ export class cardHotbar extends Hotbar {
           } else {
             //ui.notifications.error("Only GMs can use this feature.")
             const macro = game.macros.get(li.data("macro-id"));
-            game.socket.emit('module.cardsupport', {
-              type: "REVEALCARD", 
-              playerID: game.users.find(el=> el.isGM && el.active).id,
-              cardID: macro.getFlag("world", "cardID")
-            })
+            EMITTER.sendRevealCardMsg(game.users.find(el=> el.isGM && el.active).id, macro.getFlag("world", "cardID"));
           }
         }
       },
@@ -343,13 +340,7 @@ export class cardHotbar extends Hotbar {
                   if(game.user.isGM){
                     game.decks.giveToPlayer(_to,  macro.getFlag("world", "cardID"));
                   } else {
-                    let msg = {
-                      type: "GIVE",
-                      playerID: getGmId(), //Send to GM for processing
-                      to: _to,
-                      cardID: game.macros.get(li.data("macro-id")).getFlag("world", "cardID")
-                    }
-                    game.socket.emit('module.cardsupport', msg);
+                    EMITTER.sendGiveMsg(getGmId(), _to, game.macros.get(li.data("macro-id")).getFlag("world", "cardID"));
                   }
                   let slot = this.populator.macroMap.indexOf(macro.id)
                   await this.populator.chbUnsetMacro(slot);
@@ -394,7 +385,6 @@ export class cardHotbar extends Hotbar {
           Hooks.callAll("heldCardFlipped");
         }
       },
-
       {
         name: "Discard",
         icon: '<i class="fas fa-trash"></i>',
@@ -409,17 +399,10 @@ export class cardHotbar extends Hotbar {
             //const mCardId = macro.data.flags.world.cardID
             //game.decks.getByCard(mCardId).discardCard(mCardId);
             if(!game.user.isGM){
-              let socketMsg = {
-                type: "DISCARD",
-                playerID: game.users.find(el => el.isGM && el.data.active).id,
-                cardID: macro.data.flags.world.cardID
-              }
-              game.socket.emit('module.cardsupport', socketMsg);
+              EMITTER.sendDiscardMsg(game.users.find(el => el.isGM && el.data.active).id,  macro.data.flags.world.cardID);
             } else {
               game.decks.getByCard(macro.data.flags.world.cardID).discardCard(macro.data.flags.world.cardID)
             }
-
-            
             await ui.cardHotbar.populator.chbUnsetMacro(index);
           } catch (e) {
             console.error(e)

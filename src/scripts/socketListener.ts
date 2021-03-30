@@ -1,6 +1,7 @@
 import {handleDroppedCard} from './drop.js';
 import { Deck } from './deck.js';
 import {ViewJournalPile, DiscardJournalPile} from './DeckForm.js';
+import * as EMITTER from './socketEmitter.js';
 
 export function getGmId() {
     var gmPlayer = game.users.find(el => el.isGM && el.active);
@@ -13,7 +14,7 @@ export function getGmId() {
 Hooks.on("ready", () => {
   //@ts-ignore
   game.socket.on('module.cardsupport', async (data:any) => {
-    console.log("Socket Recieved: ", data);
+    console.log("Socket Received: ", data);
     if(data.playerID != game.user.id){return;}
     if(data?.type == "DEAL"){
       await ui['cardHotbar'].populator.addToPlayerHand(data.cards);
@@ -35,45 +36,10 @@ Hooks.on("ready", () => {
       game.journal.get(data.cardID).show("image", true);
     } else if (data?.type == "DROP"){
       handleDroppedCard(data.cardID, data.x, data.y, data.alt, data.sideUp);
-      //handleTokenCard(data.cardID, data.x, data.y, data.alt, data.sideUp)
-    } else if (data?.type == "TAKECARD") {
-      let img = ui['cardHotbar'].macros[data.cardNum-1].icon
-      let macro = ui['cardHotbar'].macros[data.cardNum-1].macro
-
-      let tex = await loadTexture(img)
-      new Dialog({
-        title: `${game.users.get(data.playerID).data.name} is requesting a card`,
-        content: `
-          <img src="${img}"></img>        
-        `,
-        buttons: {
-          accept: {
-            label: "Accept",
-            callback: async () => {
-              if(game.user.isGM){
-                game.decks.giveToPlayer(data.cardRequester, macro.getFlag("world", "cardID"));
-              } else {
-                let msg = {
-                  type: "GIVE",
-                  playerID: getGmId(), //Send to GM for processing
-                  to: data.cardRequester,
-                  cardID: macro.getFlag("world", "cardID")
-                }
-                //@ts-ignore
-                game.socket.emit('module.cardsupport', msg);  
-              }
-              //delete the macro in hand
-              await ui['cardHotbar'].populator.chbUnsetMacro(data.cardNum)
-            }
-          },
-          decline: {
-            label: "Decline"
-          }
-        }
-      }, {
-        height: tex.height,
-        width: tex.width
-      }).render(true)
+    } else if (data?.type == "REMOVECARD") {
+        canvas.tokens.get(data.tokenID).delete();    
+    } else if (data?.type == "REQUESTTAKECARD") {
+        requestTakeCard(data);
     } else if (data?.type == "DRAWCARDS") {
       game.decks.get(data.deckID).dealToPlayer(
         data.receiverID,
@@ -87,14 +53,7 @@ Hooks.on("ready", () => {
       cards = cardIDs.map(el => {
         return game.journal.get(el)
       }).reverse()
-      let reply:MSG_VIEWCARDS = {
-        type: "VIEWCARDS",
-        playerID: data.requesterID,
-        deckID: data.deckID,
-        cards: cards
-      }
-      //@ts-ignore
-      game.socket.emit('module.cardsupport', reply)
+      EMITTER.sendViewCardsMsg(data.requesterID, data.deckID, cards);
     } else if (data?.type == "VIEWCARDS") {
       new ViewJournalPile({
         deckID: data.deckID,
@@ -109,14 +68,7 @@ Hooks.on("ready", () => {
       cards = (<Deck>game.decks.get(data.deckID))._discard.map(el => {
         return game.journal.get(el)
       })
-      let reply:MSG_VIEWDISCARD = {
-        type: "VIEWDISCARD",
-        playerID: data.requesterID,
-        deckID: data.deckID,
-        cards: cards
-      }
-      //@ts-ignore
-      game.socket.emit('module.cardsupport', reply);
+      EMITTER.sendViewDiscardMsg(data.requesterID, data.deckID, cards);
     } else if (data?.type == "VIEWDISCARD") {
       new DiscardJournalPile({
         deckID: data.deckID,
@@ -137,159 +89,41 @@ Hooks.on("ready", () => {
         return game.journal.get(el)
       }).reverse()
       
-      let msg:MSG_RECEIVECARDSBYDECK = {
-        type: "RECEIVECARDSBYDECK",
-        playerID: data.to,
-        cards: cards,
-        deckID: data.deckID
-      }
-      
-      game.socket.emit('module.cardsupport', msg)
+      //sendReceiveCardsByDeckMsg(data.to, cards, data.deckID);
     }
   })  
-})
+});
 
-export interface MSG_RECEIVECARDSBYDECK {
-  type: "RECEIVECARDSBYDECK",
-  playerID: string,
-  cards: JournalEntry[],
-  deckID: string
-}
+async function requestTakeCard(data) {
+  let img = ui['cardHotbar'].macros[data.cardNum-1].icon
+  let macro = ui['cardHotbar'].macros[data.cardNum-1].macro
 
-export interface MSG_GETALLCARDSBYDECK {
-  type: "GETALLCARDSBYDECK",
-  playerID: string,
-  to: string,
-  deckID: string
-}
-
-export interface MSG_SHUFFLEBACKDISCARD {
-  type: "SHUFFLEBACKDISCARD",
-  playerID: string,
-  deckID: string
-}
-
-export interface MSG_CARDTOPDECK {
-  type: "CARDTOPDECK",
-  playerID: string,
-  deckID: string,
-  cardID: string
-}
-
-export interface MSG_REMOVEFROMDISCARD {
-  type: "REMOVEFROMDISCARD",
-  playerID: string,
-  deckID: string,
-  cardID: string
-}
-
-export interface MSG_VIEWDISCARD {
-  type: "VIEWDISCARD", 
-  playerID:string, 
-  deckID: string,
-  cards: JournalEntry[]
-}
-
-export interface MSG_REQUESTDISCARD {
-  type: "REQUESTDISCARD",
-  playerID: string,
-  requesterID: string,
-  deckID: string
-}
-export interface MSG_REMOVECARDFROMDISCARD {
-  type: "REMOVECARDFROMDISCARD",
-  playerID: string,
-  deckID: string,
-  cardID: string
-}
-
-export interface MSG_REMOVECARDFROMSTATE {
-  type: "REMOVECARDFROMSTATE"
-  playerID: string,
-  deckID: string,
-  cardID: string
-}
-
-export interface MSG_VIEWCARDS {
-  type: "VIEWCARDS",
-  playerID: string,
-  deckID: string
-  cards: JournalEntry[],
-}
-
-export interface MSG_REQUESTVIEWCARDS {
-  type: "REQUESTVIEWCARDS",
-  playerID: string,
-  requesterID: string,
-  deckID: string,
-  viewNum: string
-}
-
-export interface MSG_DRAWCARDS {
-  type: "DRAWCARDS",
-  playerID: string,
-  receiverID: string,
-  deckID: string,
-  numCards: number,
-  replacement: boolean
-}
-
-export interface MSG_TAKECARD {
-  type: "TAKECARD",
-  playerID: string,
-  cardRequester: string,
-  cardNum: number
-}
-
-export interface MSG_DEAL {
-  type: "DEAL", 
-  playerID: string
-  cards: JournalEntry[],
-}
-
-export interface MSG_UPDATESTATE {
-  type: "UPDATESTATE",
-  playerID: string,
-  deckID: string
-}
-
-export interface MSG_SETDECKS {
-  type: "SETDECKS",
-  playerID: string,
-}
-
-export interface DISCARD {
-  type: "DISCARD", 
-  playerID: string,
-  cardID: string
-}
-
-export interface GIVE {
-  type: "GIVE",
-  playerID: string,
-  to:string, 
-  cardID: string
-}
-
-export interface MSG_RESETDECK {
-  type: "RESETDECK",
-  playerID: string,
-  deckID: string
-}
-
-export interface MSG_REVEALCARD {
-  type: "REVEALCARD",
-  playerID:string,
-  cardID: string
-}
-
-export interface MSG_DROPTILE {
-  type: "DROP",
-  playerID: string,
-  cardID: string,
-  x: number, 
-  y: number,
-  alt: boolean,
-  sideUp: string
+  let tex = await loadTexture(img)
+  new Dialog({
+    title: `${game.users.get(data.playerID).data.name} is requesting a card`,
+    content: `
+      <img src="${img}"></img>        
+    `,
+    buttons: {
+      accept: {
+        label: "Accept",
+        callback: async () => {
+          if(game.user.isGM){
+            game.decks.giveToPlayer(data.cardRequester, macro.getFlag("world", "cardID"));
+          } else {
+            EMITTER.sendGiveMsg(getGmId(), data.cardRequester, macro.getFlag("world", "cardID"));
+          }
+          //delete the macro in hand
+          await ui['cardHotbar'].populator.chbUnsetMacro(data.cardNum)
+        }
+      },
+      decline: {
+        label: "Decline"
+      }
+    }
+  }, {
+    height: tex.height,
+    width: tex.width
+  }).render(true);
 }
 

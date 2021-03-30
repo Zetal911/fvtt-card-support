@@ -1,6 +1,6 @@
 import { mod_scope } from "./constants.js";
 import {cardHotbarSettings} from '../cardhotbar/scripts/card-hotbar-settings.js'
-import * as MSGTYPES from './socketListener.js';
+import * as EMITTER from './socketEmitter.js';
 import { getGmId } from './socketListener.js';
 
 // Add the listener to the board html element
@@ -17,17 +17,7 @@ Hooks.once("canvasReady", () => {
         if(game.user.isGM){
           handleDroppedCard(data.id, event.clientX, event.clientY, event.altKey)
         } else {
-          let msg: MSGTYPES.MSG_DROPTILE = {
-            type: "DROP",
-            playerID: getGmId(), 
-            cardID: data.id,
-            x: event.clientX, 
-            y: event.clientY, 
-            alt: event.altKey,
-            sideUp: ""
-          }
-          //@ts-ignore
-          game.socket.emit('module.cardsupport', msg)
+          EMITTER.sendDropMsg(getGmId(), data.id, event.clientX, event.clientY, event.altKey, "");
         }
       } else if (data.type == "Macro" &&  game.decks.getByCard(game.macros.get(data.id).getFlag(mod_scope, "cardID")) != undefined){
         if(game.user.isGM){
@@ -41,17 +31,7 @@ Hooks.once("canvasReady", () => {
           await ui['cardHotbar'].populator.chbUnsetMacro(data.cardSlot);
           game.macros.get(data.id).delete()  
         } else {
-          let msg: MSGTYPES.MSG_DROPTILE = {
-            type: "DROP",
-            playerID: getGmId(), 
-            cardID: game.macros.get(data.id).getFlag(mod_scope, "cardID"),
-            x: event.clientX, 
-            y: event.clientY, 
-            alt: event.altKey,
-            sideUp: game.macros.get(data.id).getFlag(mod_scope, "sideUp")
-          }
-          //@ts-ignore
-          game.socket.emit('module.cardsupport', msg)
+          EMITTER.sendDropMsg(getGmId(), game.macros.get(data.id).getFlag(mod_scope, "cardID"), event.clientX, event.clientY, event.altKey, game.macros.get(data.id).getFlag(mod_scope, "sideUp"));
           await ui['cardHotbar'].populator.chbUnsetMacro(data.cardSlot);
           game.macros.get(data.id).delete()  
         }
@@ -162,6 +142,19 @@ export async function handleDroppedCard(cardID:string, x:number, y:number, alt:b
   const cardScaleX = cardHotbarSettings.getCHBCardScaleX();
   const cardScaleY = cardHotbarSettings.getCHBCardScaleY();
   console.debug(cardScaleX + " " + cardScaleY);
+  
+  const cardActorName = "ReservedCardSupportCardActor";
+  let cardActor = game.actors.getName(cardActorName);
+  if(!cardActor) {
+    let cardActorPromise = Actor.create({
+        name: cardActorName,
+        permission: 4,
+        type: "character",
+    });
+    cardActor = (await cardActorPromise) as Actor;
+    console.log(cardActor);
+  }
+  
   await Token.create({
     name: "Card",
     img: imgPath,
@@ -169,11 +162,13 @@ export async function handleDroppedCard(cardID:string, x:number, y:number, alt:b
     y: _y,
     width: _width * cardScaleX,
     height: _height * cardScaleY,
-    permissions: 3,
+    permission: 4,
     flags: {
       [mod_scope]: {
         "cardID": `${cardID}`,
       }
-    }
+    },
+    actorId: cardActor.id,
+    actorLink: true
   })
 }

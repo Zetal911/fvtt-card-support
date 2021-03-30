@@ -9,17 +9,130 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 import { mod_scope } from './constants.js';
 import { cardHotbarSettings } from '../cardhotbar/scripts/card-hotbar-settings.js';
+import { getGmId } from './socketListener.js';
+import * as EMITTER from './socketEmitter.js';
 Hooks.on('renderTokenHUD', (tokenHUD, html, options) => {
-    var _a, _b;
-    console.log(tokenHUD);
-    console.log(html);
-    if ((_b = (_a = tokenHUD.object.data.flags) === null || _a === void 0 ? void 0 : _a[mod_scope]) === null || _b === void 0 ? void 0 : _b.deckID) {
-        html.find(".combat").remove();
-        html.find(".effects").remove();
-        html.find(".target").remove();
+    var _a, _b, _c, _d;
+    var isCard = ((_b = (_a = options.flags) === null || _a === void 0 ? void 0 : _a[mod_scope]) === null || _b === void 0 ? void 0 : _b.cardID) != undefined;
+    var isDeck = ((_d = (_c = options.flags) === null || _c === void 0 ? void 0 : _c[mod_scope]) === null || _d === void 0 ? void 0 : _d.deckID) != undefined;
+    if (isCard || isDeck) {
+        Hooks.call('renderCardHUD', tokenHUD, html, options);
+        return false;
+    }
+});
+Hooks.on('renderCardHUD', (tokenHUD, html, options) => {
+    var _a, _b, _c, _d;
+    html.find('.left').empty();
+    html.find('.right .effects').remove();
+    html.find('.right .combat').remove();
+    var isCard = ((_b = (_a = options.flags) === null || _a === void 0 ? void 0 : _a[mod_scope]) === null || _b === void 0 ? void 0 : _b.cardID) != undefined;
+    var isDeck = ((_d = (_c = options.flags) === null || _c === void 0 ? void 0 : _c[mod_scope]) === null || _d === void 0 ? void 0 : _d.deckID) != undefined;
+    if (isCard) {
+        cardHUD(tokenHUD, html);
+    }
+    else if (isDeck) {
         deckHUD(tokenHUD.object.data, html);
     }
 });
+function cardHUD(tokenHUD, html) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const handDiv = $('<i class="control-icon fa fa-hand-paper" aria-hidden="true" title="Take"></i>');
+        const flipDiv = $('<i class="control-icon fa fa-undo" aria-hidden="true" title="Flip"></i>');
+        const discardDiv = $('<i class="control-icon fa fa-trash" aria-hidden="true" title="Discard"></i>');
+        const giveCardDiv = $('<i class="control-icon icon-deal" title="Deal to players"></i>');
+        html.find('.left').append(handDiv);
+        html.find('.left').append(flipDiv);
+        html.find('.left').append(discardDiv);
+        html.find('.left').append(giveCardDiv);
+        handDiv.click((ev) => {
+            takeCard(tokenHUD.object.data);
+        });
+        flipDiv.click((ev) => {
+            flipCard(tokenHUD.object.data);
+        });
+        discardDiv.click((ev) => {
+            discardCard(tokenHUD.object.data);
+        });
+        giveCardDiv.click(ev => {
+            giveCard(tokenHUD.object.data);
+        });
+        //Embdded Functions
+        const flipCard = (td) => __awaiter(this, void 0, void 0, function* () {
+            //Create New Tile at Current Tile's X & Y
+            let cardEntry = game.journal.get(td.flags[mod_scope].cardID);
+            let newImg = "";
+            if (td.img == cardEntry.data['img']) {
+                // Card if front up, switch to back
+                newImg = cardEntry.getFlag(mod_scope, "cardBack");
+            }
+            else if (td.img == cardEntry.getFlag(mod_scope, "cardBack")) {
+                // Card is back up
+                newImg = cardEntry.data['img'];
+            }
+            else {
+                ui.notifications.error("What you doing m8? Stop breaking my code");
+                return;
+            }
+            Token.create({
+                name: td.name,
+                img: newImg,
+                x: td.x,
+                y: td.y,
+                width: td.width,
+                height: td.height,
+                flags: td.flags,
+                actorId: td.actorId,
+                actorLink: td.actorLink
+            });
+            //Delete this tile
+            canvas.tokens.get(td._id).delete();
+        });
+        const takeCard = (td) => __awaiter(this, void 0, void 0, function* () {
+            EMITTER.sendRemoveCardMsg(getGmId(), td._id);
+            ui['cardHotbar'].populator.addToHand([td.flags[mod_scope]['cardID']]);
+        });
+        const discardCard = (td) => __awaiter(this, void 0, void 0, function* () {
+            // Add Card to Discard for the Deck
+            let deckId = game.journal.get(td.flags[mod_scope].cardID).data['folder'];
+            console.log("Deck ID: ", deckId);
+            game.decks.get(deckId).discardCard(td.flags[mod_scope].cardID);
+            // Delete Tile
+            canvas.tokens.get(td._id).delete();
+        });
+        const giveCard = (td) => __awaiter(this, void 0, void 0, function* () {
+            let players = "";
+            //@ts-ignore
+            for (let user of game.users.entries) {
+                if (user.isSelf == false && user.active) {
+                    players += `<option value=${user.id}>${user.name}</option>`;
+                }
+            }
+            let dialogHTML = `
+    <p> Player <select id="player">${players}</select> </p>
+    `;
+            new Dialog({
+                title: "Give Card to Player",
+                content: dialogHTML,
+                buttons: {
+                    give: {
+                        label: "Give",
+                        callback: (html) => __awaiter(this, void 0, void 0, function* () {
+                            let _to = html.find("#player")[0].value;
+                            if (game.user.isGM) {
+                                game.decks.giveToPlayer(_to, td.flags[mod_scope].cardID);
+                            }
+                            else {
+                                EMITTER.sendGiveMsg(getGmId(), _to, td.flags[mod_scope].cardID);
+                            }
+                            //delete tile
+                            yield canvas.scene.deleteEmbeddedEntity("Tile", td._id);
+                        })
+                    }
+                }
+            }).render(true);
+        });
+    });
+}
 function deckHUD(td, html) {
     return __awaiter(this, void 0, void 0, function* () {
         const deckID = td.flags[mod_scope]['deckID'];
@@ -96,8 +209,8 @@ function deckHUD(td, html) {
                                             x: html.find("#deckX")[0].value,
                                             y: html.find("#deckY")[0].value,
                                             z: 100 + i,
-                                            width: tex.width * cardHotbarSettings.getCHBCardScale(),
-                                            height: tex.height * cardHotbarSettings.getCHBCardScale(),
+                                            width: tex.width * cardHotbarSettings.getCHBCardScaleX(),
+                                            height: tex.height * cardHotbarSettings.getCHBCardScaleY(),
                                             flags: {
                                                 [mod_scope]: {
                                                     "cardID": card
@@ -120,8 +233,8 @@ function deckHUD(td, html) {
                                             x: html.find("#deckX")[0].value,
                                             y: html.find("#deckY")[0].value,
                                             z: 100 + i,
-                                            width: tex.width * cardHotbarSettings.getCHBCardScale(),
-                                            height: tex.height * cardHotbarSettings.getCHBCardScale(),
+                                            width: tex.width * cardHotbarSettings.getCHBCardScaleX(),
+                                            height: tex.height * cardHotbarSettings.getCHBCardScaleY(),
                                             flags: {
                                                 [mod_scope]: {
                                                     "cardID": card
@@ -212,25 +325,15 @@ function deckHUD(td, html) {
                     deal: {
                         label: "Deal",
                         callback: (html) => __awaiter(this, void 0, void 0, function* () {
-                            let _cardIDs = [];
-                            for (let i = 0; i < html.find("#numCards")[0].value; i++) {
-                                if (html.find("#infinite")[0].checked) {
-                                    _cardIDs.push(deck.infinteDraw());
-                                }
-                                else {
-                                    _cardIDs.push(yield deck.drawCard());
+                            var _b;
+                            let inf = html.find("#infinite")[0].checked ? true : false;
+                            let numCards = html.find("#numCards")[0].value;
+                            //@ts-ignore
+                            for (let user of game.users.entries) {
+                                if ((_b = html.find(`#${user.id}`)[0]) === null || _b === void 0 ? void 0 : _b.checked) {
+                                    deck.dealToPlayer(user.id, numCards, inf);
                                 }
                             }
-                            let socketMsg = {
-                                type: "DEAL",
-                                deck: deck.deckName,
-                                from: game.user.id,
-                                to: html.find("#player")[0].value,
-                                cardIDs: _cardIDs
-                            };
-                            //@ts-ignore
-                            game.socket.emit('module.cardsupport', socketMsg);
-                            console.log("emitting msg: ", socketMsg);
                         })
                     }
                 }
@@ -238,7 +341,7 @@ function deckHUD(td, html) {
         });
     });
 }
-class DiscardPile extends FormApplication {
+export class DiscardPile extends FormApplication {
     constructor(object, options = {}) {
         super(object, options);
         this.pile = object['pile'];
@@ -315,7 +418,7 @@ class DiscardPile extends FormApplication {
         });
     }
 }
-class ViewPile extends FormApplication {
+export class ViewPile extends FormApplication {
     constructor(obj, opts = {}) {
         super(obj, opts);
         this.deckID = "";

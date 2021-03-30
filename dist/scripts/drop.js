@@ -9,6 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 import { mod_scope } from "./constants.js";
 import { cardHotbarSettings } from '../cardhotbar/scripts/card-hotbar-settings.js';
+import * as EMITTER from './socketEmitter.js';
 import { getGmId } from './socketListener.js';
 // Add the listener to the board html element
 Hooks.once("canvasReady", () => {
@@ -26,17 +27,7 @@ Hooks.once("canvasReady", () => {
                     handleDroppedCard(data.id, event.clientX, event.clientY, event.altKey);
                 }
                 else {
-                    let msg = {
-                        type: "DROP",
-                        playerID: getGmId(),
-                        cardID: data.id,
-                        x: event.clientX,
-                        y: event.clientY,
-                        alt: event.altKey,
-                        sideUp: ""
-                    };
-                    //@ts-ignore
-                    game.socket.emit('module.cardsupport', msg);
+                    EMITTER.sendDropMsg(getGmId(), data.id, event.clientX, event.clientY, event.altKey, "");
                 }
             }
             else if (data.type == "Macro" && game.decks.getByCard(game.macros.get(data.id).getFlag(mod_scope, "cardID")) != undefined) {
@@ -46,17 +37,7 @@ Hooks.once("canvasReady", () => {
                     game.macros.get(data.id).delete();
                 }
                 else {
-                    let msg = {
-                        type: "DROP",
-                        playerID: getGmId(),
-                        cardID: game.macros.get(data.id).getFlag(mod_scope, "cardID"),
-                        x: event.clientX,
-                        y: event.clientY,
-                        alt: event.altKey,
-                        sideUp: game.macros.get(data.id).getFlag(mod_scope, "sideUp")
-                    };
-                    //@ts-ignore
-                    game.socket.emit('module.cardsupport', msg);
+                    EMITTER.sendDropMsg(getGmId(), game.macros.get(data.id).getFlag(mod_scope, "cardID"), event.clientX, event.clientY, event.altKey, game.macros.get(data.id).getFlag(mod_scope, "sideUp"));
                     yield ui['cardHotbar'].populator.chbUnsetMacro(data.cardSlot);
                     game.macros.get(data.id).delete();
                 }
@@ -110,6 +91,42 @@ function handleDroppedFolder(folderId, x, y) {
         }));
     });
 }
+// for Journal cards
+/*export async function handleDroppedCard(cardID:string, x:number, y:number, alt:boolean, sideUp="front"){
+  let imgPath = "";
+  if(alt || sideUp == "back"){
+    imgPath = game.journal.get(cardID).getFlag(mod_scope, "cardBack")
+  } else {
+    imgPath = game.journal.get(cardID).data['img']
+  }
+
+  // Determine the Tile Size:
+  const tex = await loadTexture(imgPath);
+  const _width = tex.width;
+  const _height = tex.height;
+
+  // Project the tile Position
+  let t = canvas.tiles.worldTransform;
+  const _x = (x - t.tx) / canvas.stage.scale.x
+  const _y = (y - t.ty) / canvas.stage.scale.y
+
+  const cardScaleX = cardHotbarSettings.getCHBCardScaleX();
+  const cardScaleY = cardHotbarSettings.getCHBCardScaleY();
+  console.debug(cardScaleX + " " + cardScaleY);
+  await Tile.create({
+    img: imgPath,
+    x: _x,
+    y: _y,
+    width: _width * cardScaleX,
+    height: _height * cardScaleY,
+    flags: {
+      [mod_scope]: {
+        "cardID": `${cardID}`,
+      }
+    }
+  })
+}*/
+// for Token cards
 export function handleDroppedCard(cardID, x, y, alt, sideUp = "front") {
     return __awaiter(this, void 0, void 0, function* () {
         let imgPath = "";
@@ -121,8 +138,8 @@ export function handleDroppedCard(cardID, x, y, alt, sideUp = "front") {
         }
         // Determine the Tile Size:
         const tex = yield loadTexture(imgPath);
-        const _width = tex.width;
-        const _height = tex.height;
+        const _width = tex.width / canvas.dimensions.size;
+        const _height = tex.height / canvas.dimensions.size;
         // Project the tile Position
         let t = canvas.tiles.worldTransform;
         const _x = (x - t.tx) / canvas.stage.scale.x;
@@ -130,53 +147,32 @@ export function handleDroppedCard(cardID, x, y, alt, sideUp = "front") {
         const cardScaleX = cardHotbarSettings.getCHBCardScaleX();
         const cardScaleY = cardHotbarSettings.getCHBCardScaleY();
         console.debug(cardScaleX + " " + cardScaleY);
-        yield Tile.create({
+        const cardActorName = "ReservedCardSupportCardActor";
+        let cardActor = game.actors.getName(cardActorName);
+        if (!cardActor) {
+            let cardActorPromise = Actor.create({
+                name: cardActorName,
+                permission: 4,
+                type: "character",
+            });
+            cardActor = (yield cardActorPromise);
+            console.log(cardActor);
+        }
+        yield Token.create({
+            name: "Card",
             img: imgPath,
             x: _x,
             y: _y,
             width: _width * cardScaleX,
             height: _height * cardScaleY,
+            permission: 4,
             flags: {
                 [mod_scope]: {
                     "cardID": `${cardID}`,
                 }
-            }
+            },
+            actorId: cardActor.id,
+            actorLink: true
         });
     });
 }
-/*export async function handleTokenCard(cardID:string, x:number, y:number, alt:boolean, sideUp="front"){
-  let imgPath = "";
-  if(alt || sideUp == "back"){
-    imgPath = game.journal.get(cardID).getFlag(mod_scope, "cardBack")
-  } else {
-    imgPath = game.journal.get(cardID).data['img']
-  }
-
-  // Determine the Tile Size:
-  const tex = await loadTexture(imgPath);
-  const _width = tex.width / canvas.dimensions.size;
-  const _height = tex.height / canvas.dimensions.size;
-
-  // Project the tile Position
-  let t = canvas.tiles.worldTransform;
-  const _x = (x - t.tx) / canvas.stage.scale.x
-  const _y = (y - t.ty) / canvas.stage.scale.y
-
-  const cardScaleX = cardHotbarSettings.getCHBCardScaleX();
-  const cardScaleY = cardHotbarSettings.getCHBCardScaleY();
-  console.debug(cardScaleX + " " + cardScaleY);
-  await Token.create({
-    name: "Card",
-    img: imgPath,
-    x: _x,
-    y: _y,
-    width: _width * cardScaleX,
-    height: _height * cardScaleY,
-    permissions: 3,
-    flags: {
-      [mod_scope]: {
-        "cardID": `${cardID}`,
-      }
-    }
-  })
-}*/ 

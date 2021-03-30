@@ -1,7 +1,7 @@
 import { Deck } from "./deck.js";
-import * as MSGTYPES from './socketListener.js';
+import * as EMITTER from './socketEmitter.js';
 import { getGmId } from './socketListener.js';
-import {ViewPile, DiscardPile} from './tileHud.js'
+import {ViewPile, DiscardPile} from './tokenHud.js'
 
 export class DeckForm extends FormApplication {
   constructor(obj, opts = {}){
@@ -61,16 +61,7 @@ export class DeckForm extends FormApplication {
                     html.find("#infiniteDraw")[0].checked
                   )
                 } else {
-                  let msg:MSGTYPES.MSG_DRAWCARDS = {
-                    type: "DRAWCARDS",
-                    playerID: getGmId(),
-                    receiverID: game.user.id,
-                    deckID: html.find("#deckID")[0].value,
-                    numCards: html.find("#numCards")[0].value,
-                    replacement: html.find("#infiniteDraw")[0].checked
-                  }
-                  //@ts-ignore
-                  game.socket.emit('module.cardsupport', msg);
+                  EMITTER.sendDrawCardsMsg(getGmId(), game.user.id, html.find("#deckID")[0].value, html.find("#numCards")[0].value, html.find("#infiniteDraw")[0].checked);
                 }
               }
             }
@@ -107,15 +98,7 @@ export class DeckForm extends FormApplication {
                   }).render(true)
                 } else { 
                   // send a socket request to request journal entries
-                  let msg:MSGTYPES.MSG_REQUESTVIEWCARDS = {
-                    type: "REQUESTVIEWCARDS",
-                    playerID: getGmId(),
-                    requesterID: game.user.id,
-                    deckID: deck.deckID,
-                    viewNum: html.find("#numCards")[0].value
-                  }
-                  //@ts-ignore
-                  game.socket.emit('module.cardsupport', msg);
+                  EMITTER.sendRequestViewCardsMsg(getGmId(), game.user.id, deck.deckID, html.find("#numCards")[0].value);
                 }
               }
             }
@@ -136,14 +119,7 @@ export class DeckForm extends FormApplication {
           }
           new DiscardPile({pile: discardPile, deck: deck}, {}).render(true)
         } else {
-          let msg:MSGTYPES.MSG_REQUESTDISCARD = {
-            type: "REQUESTDISCARD",
-            playerID: game.users.find(el=>el.isGM && el.active).id,
-            deckID: deck.deckID,
-            requesterID: game.user.id
-          }
-          //@ts-ignore
-          game.socket.emit('module.cardsupport', msg)
+          EMITTER.sendRequestDiscardMsg(game.users.find(el=>el.isGM && el.active).id, deck.deckID, game.user.id);
         }
       })
     }
@@ -207,14 +183,7 @@ export class ViewJournalPile extends FormApplication {
         ui['cardHotbar'].populator.addToPlayerHand([this.cards.find(el => el['_id'] == cardID)]);
         
         // GM SOCKET TO REMOVEFROMSTATE a Card
-        let msg:MSGTYPES.MSG_REMOVECARDFROMSTATE = {
-          type: "REMOVECARDFROMSTATE",
-          playerID: game.users.find(el=> el.isGM && el.active).id,
-          deckID: this.deckID,
-          cardID: cardID
-        }
-        //@ts-ignore
-        game.socket.emit('module.cardsupport', msg);
+        EMITTER.sendRemoveCardFromStateMsg(game.users.find(el=>el.isGM && el.active).id, this.deckID, cardID);
         this.cards = this.cards.filter(el=> {
           return el._id != cardID
         })
@@ -319,14 +288,7 @@ export class DiscardJournalPile extends FormApplication {
         ui['cardHotbar'].populator.addToPlayerHand([this.cards.find(el => el['_id'] == cardID)]);
         
         // GM SOCKET TO REMOVEFROMSTATE a Card
-        let msg:MSGTYPES.MSG_REMOVECARDFROMDISCARD = {
-          type: "REMOVECARDFROMDISCARD",
-          playerID: game.users.find(el=> el.isGM && el.active).id,
-          deckID: this.deckID,
-          cardID: cardID
-        }
-        //@ts-ignore
-        game.socket.emit('module.cardsupport', msg);
+        EMITTER.sendRemoveCardFromDiscardMsg(game.users.find(el=>el.isGM && el.active).id, this.deckID, cardID);
         this.cards = this.cards.filter(el=> {
           return el._id != cardID
         })
@@ -369,14 +331,7 @@ export class DiscardJournalPile extends FormApplication {
       })
     
       html.find(`#${cardID}-burn`).click(() => {
-        let msg:MSGTYPES.MSG_REMOVECARDFROMDISCARD = {
-          type: "REMOVECARDFROMDISCARD",
-          playerID: getGmId(),
-          deckID: this.deckID,
-          cardID: cardID
-        }
-        //@ts-ignore
-        game.socket.emit('module.cardsupport', msg)
+        EMITTER.sendRemoveCardFromDiscardMsg(getGmId(), this.deckID, cardID);
         this.cards = this.cards.filter(el=> {
           return el._id != cardID
         })
@@ -396,14 +351,7 @@ export class DiscardJournalPile extends FormApplication {
       })
       
       html.find(`#${cardID}-topdeck`).click(() => {
-        let msg:MSGTYPES.MSG_CARDTOPDECK = {
-          type: "CARDTOPDECK",
-          playerID: getGmId(),
-          deckID: this.deckID,
-          cardID: cardID
-        }
-        //@ts-ignore
-        game.socket.emit('module.cardsupport', msg);
+        EMITTER.sendCardTopDeckMsg(getGmId(), this.deckID, cardID);
 
         this.cards = this.cards.filter(el=> {
           return el._id != cardID
@@ -424,13 +372,7 @@ export class DiscardJournalPile extends FormApplication {
       })
     }
     html.find(`#shuffleBack`).click(() => {
-      let msg:MSGTYPES.MSG_SHUFFLEBACKDISCARD = {
-        type: "SHUFFLEBACKDISCARD",
-        playerID : getGmId(),
-        deckID: this.deckID
-      }
-      //@ts-ignore
-      game.socket.emit('module.cardsupport', msg)
+      EMITTER.sendShuffleBackDiscardMsg(getGmId(), this.deckID);
       this.cards = []
       if(game.settings.get("cardsupport", "chatMessageOnPlayerAction")){
         ChatMessage.create({

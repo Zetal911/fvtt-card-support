@@ -1,7 +1,7 @@
 /// <reference types="js-yaml" />
 import {Card} from './card'
 import {mod_scope} from './constants.js';
-import * as MSGTYPES from './socketListener.js';
+import * as EMITTER from './socketEmitter.js';
 
 export class Deck{
   public _cards: string[] // All Cards
@@ -49,22 +49,12 @@ export class Deck{
       await game.settings.set("cardsupport", "decks", JSON.stringify(game.decks.decks))
       
       //@ts-ignore
-      for(let user of game.users.entries){
+      for(let user of game.users.entries) {
         if(user.isSelf){continue;}
-        //@ts-ignore
-        game.socket.emit('module.cardsupport', {
-          type: "SETDECKS",
-          playerID: user.id,
-        })
-      }   
-    } else {
-      let msg:MSGTYPES.MSG_UPDATESTATE = {
-        type: "UPDATESTATE",
-        playerID: game.users.find(el => el.isGM && el.data.active).id,
-        deckID: this.deckID
+        EMITTER.sendSetDecksMsg(user.id);
       }
-      //@ts-ignore
-      game.socket.emit('module.cardsupport', msg);
+    } else {
+      EMITTER.sendUpdateStateMsg(game.users.find(el => el.isGM && el.data.active).id, this.deckID);
     }
   }
 
@@ -130,13 +120,7 @@ export class Deck{
         if(user.isSelf){
           ui['cardHotbar'].populator.resetDeck(this.deckID);
         } else {
-          let resetMsg: MSGTYPES.MSG_RESETDECK = {
-            type: "RESETDECK",
-            playerID: user.id,
-            deckID: this.deckID
-          }
-          //@ts-ignore
-          game.socket.emit('module.cardsupport', resetMsg);
+          EMITTER.sendResetDeckMsg(user.id, this.deckID);
         }
       }
 
@@ -249,13 +233,7 @@ export class Deck{
       if(game.user.id == playerID){
         ui['cardHotbar'].populator.addToPlayerHand(cards)
       } else {
-        let msg:MSGTYPES.MSG_DEAL = {
-          type: "DEAL",
-          playerID: playerID,
-          cards: cards
-        }
-        //@ts-ignore
-        game.socket.emit('module.cardsupport', msg)
+        EMITTER.sendDealMsg(playerID, cards);
       }
       resolve();
     })
@@ -530,14 +508,7 @@ export class Decks{
 
   public giveToPlayer(playerID:string, cardID:string){
     if(!game.user.isGM){console.error("This function can only be called by the GM");return;}
-    let msg:MSGTYPES.MSG_DEAL = {
-      type: "DEAL",
-      playerID: playerID,
-      cards: [game.journal.get(cardID)]
-    }
-    
-    //@ts-ignore
-    game.socket.emit('module.cardsupport', msg)
+    EMITTER.sendDealMsg(playerID, [game.journal.get(cardID)]);
   }
 }
 
