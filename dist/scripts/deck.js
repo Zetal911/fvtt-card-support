@@ -39,7 +39,7 @@ export class Deck {
      */
     updateState() {
         return __awaiter(this, void 0, void 0, function* () {
-            EMITTER.sendUpdateStateMsg(game.users.find(el => el.isGM && el.data.active).id, this.deckID);
+            EMITTER.sendUpdateStateMsg(game.users.find(el => el.isGM && el.active).id, this.deckID);
         });
     }
     /**

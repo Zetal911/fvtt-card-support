@@ -48,14 +48,16 @@ Hooks.on("ready", () => {
       receivedMessage = (new EMITTER.MSG_REMOVECARDFROMSTATE(data.playerID, data.deckID, data.cardID));
     } else if (data?.type == "REMOVECARDFROMDISCARD") {
       receivedMessage = (new EMITTER.MSG_REMOVECARDFROMDISCARD(data.playerID, data.deckID, data.cardID));
-    } else if (data?.type == "REQUESTDISCARD") {
-      receivedMessage = (new EMITTER.MSG_REQUESTDISCARD(data.playerID, data.requesterID, data.deckID));
+    } else if (data?.type == "REQUESTVIEWDISCARD") {
+      receivedMessage = (new EMITTER.MSG_REQUESTVIEWDISCARD(data.playerID, data.requesterID, data.deckID));
     } else if (data?.type == "CARDTOPDECK") {
       receivedMessage = (new EMITTER.MSG_CARDTOPDECK(data.playerID, data.deckID, data.cardID));
     } else if (data?.type == "SHUFFLEBACKDISCARD") {
       receivedMessage = (new EMITTER.MSG_SHUFFLEBACKDISCARD(data.playerID, data.deckID));
     } else if (data?.type == "GETALLCARDSBYDECK"){
       receivedMessage = (new EMITTER.MSG_GETALLCARDSBYDECK(data.playerID, data.to, data.deckID));
+    } else if (data?.type == "VIEWDISCARD"){
+      receivedMessage = (new EMITTER.MSG_VIEWDISCARD(data.playerID, data.deckID, data.cards));
     }
     
     if(receivedMessage != null) {

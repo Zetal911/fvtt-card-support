@@ -91,8 +91,8 @@ export function sendRemoveCardFromDiscardMsg(playerID: string, deckID: string, c
     emitMsg(msg);
 }
 
-export function sendRequestDiscardMsg(playerID: string, requesterID: string, deckID: string) {
-    let msg:MSG_REQUESTDISCARD = new MSG_REQUESTDISCARD(playerID, requesterID, deckID);
+export function sendRequestViewDiscardMsg(playerID: string, requesterID: string, deckID: string) {
+    let msg:MSG_REQUESTVIEWDISCARD = new MSG_REQUESTVIEWDISCARD(playerID, requesterID, deckID);
     emitMsg(msg);
 }
 
@@ -377,19 +377,16 @@ export class MSG_REMOVECARDFROMDISCARD extends MSG_BASE {
   }
 }
 
-export class MSG_REQUESTDISCARD extends MSG_BASE {
+export class MSG_REQUESTVIEWDISCARD extends MSG_BASE {
   constructor(
   public playerID: string,
   public requesterID: string,
   public deckID: string,
-  public type: string = "REQUESTDISCARD",
+  public type: string = "REQUESTVIEWDISCARD",
   ) { super(); }
     
   public async execute() {
-      let cards: JournalEntry[] = []
-      cards = (<Deck>game.decks.get(this.deckID))._discard.map(el => {
-        return game.journal.get(el)
-      })
+      let cards: JournalEntry[] = (<Deck>game.decks.get(this.deckID))._discard.map(el => { return game.journal.get(el) })
       sendViewDiscardMsg(this.requesterID, this.deckID, cards);
   }
 }

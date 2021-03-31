@@ -268,7 +268,7 @@ export class cardHotbarPopulator {
                                         console.debug(mDeck);
                                         if (mDeck) {
                                             //console.debug("Card Hotbar | Discarding card (macro, deck)...");
-                                            EMITTER.sendDiscardMsg(game.users.find(el => el.isGM && el.data.active).id, mCardId);
+                                            EMITTER.sendDiscardMsg(game.users.find(el => el.isGM && el.active).id, mCardId);
                                         }   
                                     }
                                     m.delete();

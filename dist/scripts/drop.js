@@ -18,14 +18,17 @@ Hooks.once("canvasReady", () => {
         try {
             let data = JSON.parse(event.dataTransfer.getData("text/plain"));
             console.log(data);
+            let t = canvas.tokens.worldTransform;
+            const _x = (event.x - t.tx) / canvas.stage.scale.x;
+            const _y = (event.y - t.ty) / canvas.stage.scale.y;
             if (data.type == "Folder" && game.decks.get(data.id) != undefined && game.user.isGM) {
-                handleDroppedFolder(data.id, event.x, event.y);
+                handleDroppedFolder(data.id, _x, _y);
             }
             else if (data.type == "JournalEntry" && game.decks.getByCard(data.id) != undefined) {
-                EMITTER.sendDropMsg(getGmId(), data.id, event.clientX, event.clientY, event.altKey, "");
+                EMITTER.sendDropMsg(getGmId(), data.id, _x, _y, event.altKey, "");
             }
             else if (data.type == "Macro" && game.decks.getByCard(game.macros.get(data.id).getFlag(mod_scope, "cardID")) != undefined) {
-                EMITTER.sendDropMsg(getGmId(), game.macros.get(data.id).getFlag(mod_scope, "cardID"), event.clientX, event.clientY, event.altKey, game.macros.get(data.id).getFlag(mod_scope, "sideUp"));
+                EMITTER.sendDropMsg(getGmId(), game.macros.get(data.id).getFlag(mod_scope, "cardID"), _x, _y, event.altKey, game.macros.get(data.id).getFlag(mod_scope, "sideUp"));
                 yield ui['cardHotbar'].populator.chbUnsetMacro(data.cardSlot);
                 game.macros.get(data.id).delete();
             }
@@ -36,12 +39,9 @@ Hooks.once("canvasReady", () => {
         }
     }));
 });
-function handleDroppedFolder(folderId, x, y) {
+function handleDroppedFolder(folderId, _x, _y) {
     return __awaiter(this, void 0, void 0, function* () {
         return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
-            let t = canvas.tiles.worldTransform;
-            const _x = (x - t.tx) / canvas.stage.scale.x;
-            const _y = (y - t.ty) / canvas.stage.scale.y;
             if (game.settings.get('cardsupport', `${folderId}-settings`) && game.settings.get('cardsupport', `${folderId}-settings`)['deckImg'] != "") {
                 let deckImgTex = yield loadTexture(game.settings.get('cardsupport', `${folderId}-settings`)['deckImg']);
                 Tile.create({
@@ -78,43 +78,8 @@ function handleDroppedFolder(folderId, x, y) {
         }));
     });
 }
-// for Journal cards
-/*export async function handleDroppedCard(cardID:string, x:number, y:number, alt:boolean, sideUp="front"){
-  let imgPath = "";
-  if(alt || sideUp == "back"){
-    imgPath = game.journal.get(cardID).getFlag(mod_scope, "cardBack")
-  } else {
-    imgPath = game.journal.get(cardID).data['img']
-  }
-
-  // Determine the Tile Size:
-  const tex = await loadTexture(imgPath);
-  const _width = tex.width;
-  const _height = tex.height;
-
-  // Project the tile Position
-  let t = canvas.tiles.worldTransform;
-  const _x = (x - t.tx) / canvas.stage.scale.x
-  const _y = (y - t.ty) / canvas.stage.scale.y
-
-  const cardScaleX = cardHotbarSettings.getCHBCardScaleX();
-  const cardScaleY = cardHotbarSettings.getCHBCardScaleY();
-  console.debug(cardScaleX + " " + cardScaleY);
-  await Tile.create({
-    img: imgPath,
-    x: _x,
-    y: _y,
-    width: _width * cardScaleX,
-    height: _height * cardScaleY,
-    flags: {
-      [mod_scope]: {
-        "cardID": `${cardID}`,
-      }
-    }
-  })
-}*/
 // for Token cards
-export function handleDroppedCard(cardID, x, y, alt, sideUp = "front") {
+export function handleDroppedCard(cardID, _x, _y, alt, sideUp = "front") {
     return __awaiter(this, void 0, void 0, function* () {
         let imgPath = "";
         if (alt || sideUp == "back") {
@@ -127,10 +92,6 @@ export function handleDroppedCard(cardID, x, y, alt, sideUp = "front") {
         const tex = yield loadTexture(imgPath);
         const _width = tex.width / canvas.dimensions.size;
         const _height = tex.height / canvas.dimensions.size;
-        // Project the tile Position
-        let t = canvas.tiles.worldTransform;
-        const _x = (x - t.tx) / canvas.stage.scale.x;
-        const _y = (y - t.ty) / canvas.stage.scale.y;
         const cardScaleX = cardHotbarSettings.getCHBCardScaleX();
         const cardScaleY = cardHotbarSettings.getCHBCardScaleY();
         console.debug(cardScaleX + " " + cardScaleY);

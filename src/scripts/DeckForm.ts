@@ -119,7 +119,7 @@ export class DeckForm extends FormApplication {
           }
           new DiscardPile({pile: discardPile, deck: deck}, {}).render(true)
         } else {
-          EMITTER.sendRequestDiscardMsg(game.users.find(el=>el.isGM && el.active).id, deck.deckID, game.user.id);
+          EMITTER.sendRequestViewDiscardMsg(game.users.find(el => el.isGM && el.active).id, game.user.id, deck.deckID);
         }
       })
     }

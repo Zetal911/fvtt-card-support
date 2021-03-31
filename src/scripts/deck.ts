@@ -39,7 +39,7 @@ export class Deck{
    * Used to update the flags with the current state of the deck
    */
   public async updateState(){
-    EMITTER.sendUpdateStateMsg(game.users.find(el => el.isGM && el.data.active).id, this.deckID);
+    EMITTER.sendUpdateStateMsg(game.users.find(el => el.isGM && el.active).id, this.deckID);
   }
   
   /**

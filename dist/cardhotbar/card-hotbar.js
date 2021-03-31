@@ -383,7 +383,7 @@ export class cardHotbar extends Hotbar {
           const macro = game.macros.get(li.data("macro-id"));
           const index = li.data("slot");
           try{
-            EMITTER.sendDiscardMsg(game.users.find(el => el.isGM && el.data.active).id,  macro.data.flags.world.cardID);
+            EMITTER.sendDiscardMsg(game.users.find(el => el.isGM && el.active).id,  macro.data.flags.world.cardID);
             await ui.cardHotbar.populator.chbUnsetMacro(index);
           } catch (e) {
             console.error(e)

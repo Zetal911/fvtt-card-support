@@ -92,12 +92,8 @@ function cardHUD(tokenHUD, html) {
             ui['cardHotbar'].populator.addToHand([td.flags[mod_scope]['cardID']]);
         });
         const discardCard = (td) => __awaiter(this, void 0, void 0, function* () {
-            // Add Card to Discard for the Deck
-            let deckId = game.journal.get(td.flags[mod_scope].cardID).data['folder'];
-            console.log("Deck ID: ", deckId);
-            game.decks.get(deckId).discardCard(td.flags[mod_scope].cardID);
-            // Delete Tile
-            canvas.tokens.get(td._id).delete();
+            EMITTER.sendDiscardMsg(getGmId(), td.flags[mod_scope].cardID);
+            EMITTER.sendRemoveCardMsg(getGmId(), td._id);
         });
         const giveCard = (td) => __awaiter(this, void 0, void 0, function* () {
             let players = "";
@@ -119,8 +115,7 @@ function cardHUD(tokenHUD, html) {
                         callback: (html) => __awaiter(this, void 0, void 0, function* () {
                             let _to = html.find("#player")[0].value;
                             EMITTER.sendGiveMsg(getGmId(), _to, td.flags[mod_scope].cardID);
-                            //delete tile
-                            yield canvas.scene.deleteEmbeddedEntity("Tile", td._id);
+                            EMITTER.sendRemoveCardMsg(getGmId(), td._id);
                         })
                     }
                 }

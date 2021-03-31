@@ -68,8 +68,8 @@ Hooks.on("ready", () => {
         else if ((data === null || data === void 0 ? void 0 : data.type) == "REMOVECARDFROMDISCARD") {
             receivedMessage = (new EMITTER.MSG_REMOVECARDFROMDISCARD(data.playerID, data.deckID, data.cardID));
         }
-        else if ((data === null || data === void 0 ? void 0 : data.type) == "REQUESTDISCARD") {
-            receivedMessage = (new EMITTER.MSG_REQUESTDISCARD(data.playerID, data.requesterID, data.deckID));
+        else if ((data === null || data === void 0 ? void 0 : data.type) == "REQUESTVIEWDISCARD") {
+            receivedMessage = (new EMITTER.MSG_REQUESTVIEWDISCARD(data.playerID, data.requesterID, data.deckID));
         }
         else if ((data === null || data === void 0 ? void 0 : data.type) == "CARDTOPDECK") {
             receivedMessage = (new EMITTER.MSG_CARDTOPDECK(data.playerID, data.deckID, data.cardID));
@@ -79,6 +79,9 @@ Hooks.on("ready", () => {
         }
         else if ((data === null || data === void 0 ? void 0 : data.type) == "GETALLCARDSBYDECK") {
             receivedMessage = (new EMITTER.MSG_GETALLCARDSBYDECK(data.playerID, data.to, data.deckID));
+        }
+        else if ((data === null || data === void 0 ? void 0 : data.type) == "VIEWDISCARD") {
+            receivedMessage = (new EMITTER.MSG_VIEWDISCARD(data.playerID, data.deckID, data.cards));
         }
         if (receivedMessage != null) {
             console.log(receivedMessage);

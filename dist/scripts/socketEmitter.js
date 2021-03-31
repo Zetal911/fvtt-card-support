@@ -83,8 +83,8 @@ export function sendRemoveCardFromDiscardMsg(playerID, deckID, cardID) {
     let msg = new MSG_REMOVECARDFROMDISCARD(playerID, deckID, cardID);
     emitMsg(msg);
 }
-export function sendRequestDiscardMsg(playerID, requesterID, deckID) {
-    let msg = new MSG_REQUESTDISCARD(playerID, requesterID, deckID);
+export function sendRequestViewDiscardMsg(playerID, requesterID, deckID) {
+    let msg = new MSG_REQUESTVIEWDISCARD(playerID, requesterID, deckID);
     emitMsg(msg);
 }
 export function sendViewDiscardMsg(playerID, deckID, cards) {
@@ -370,8 +370,8 @@ export class MSG_REMOVECARDFROMDISCARD extends MSG_BASE {
         });
     }
 }
-export class MSG_REQUESTDISCARD extends MSG_BASE {
-    constructor(playerID, requesterID, deckID, type = "REQUESTDISCARD") {
+export class MSG_REQUESTVIEWDISCARD extends MSG_BASE {
+    constructor(playerID, requesterID, deckID, type = "REQUESTVIEWDISCARD") {
         super();
         this.playerID = playerID;
         this.requesterID = requesterID;
@@ -380,10 +380,7 @@ export class MSG_REQUESTDISCARD extends MSG_BASE {
     }
     execute() {
         return __awaiter(this, void 0, void 0, function* () {
-            let cards = [];
-            cards = game.decks.get(this.deckID)._discard.map(el => {
-                return game.journal.get(el);
-            });
+            let cards = game.decks.get(this.deckID)._discard.map(el => { return game.journal.get(el); });
             sendViewDiscardMsg(this.requesterID, this.deckID, cards);
         });
     }
