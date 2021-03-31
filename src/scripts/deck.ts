@@ -38,26 +38,9 @@ export class Deck{
   /**
    * Used to update the flags with the current state of the deck
    */
-  private async updateState(){
-    if(game.user.isGM){
-      await game.folders.get(this.deckID).setFlag(mod_scope, 'deckState', JSON.stringify({
-        state: this._state,
-        cards: this._cards,
-        discard: this._discard
-      }))
-
-      await game.settings.set("cardsupport", "decks", JSON.stringify(game.decks.decks))
-      
-      //@ts-ignore
-      for(let user of game.users.entries) {
-        if(user.isSelf){continue;}
-        EMITTER.sendSetDecksMsg(user.id);
-      }
-    } else {
-      EMITTER.sendUpdateStateMsg(game.users.find(el => el.isGM && el.data.active).id, this.deckID);
-    }
+  public async updateState(){
+    EMITTER.sendUpdateStateMsg(game.users.find(el => el.isGM && el.data.active).id, this.deckID);
   }
-
   
   /**
    * Shuffles the Current Deck

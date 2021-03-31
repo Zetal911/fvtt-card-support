@@ -297,17 +297,8 @@ export class cardHotbar extends Hotbar {
           return macro ? macro.owner : false;
         },
         callback: li => {
-          if(game.user.isGM){
-            const journal = game.journal.get ( game.macros.get( li.data("macro-id") ).getFlag("world","cardID") );
-            console.debug("Card Hotbar | Revealing card to all players...");
-            //console.debug( game.macros.get( li.data("macro-id") ) );
-            journal.show("image", true);
-            ui.notifications.notify("Card now revealed to all players...");            
-          } else {
-            //ui.notifications.error("Only GMs can use this feature.")
-            const macro = game.macros.get(li.data("macro-id"));
-            EMITTER.sendRevealCardMsg(game.users.find(el=> el.isGM && el.active).id, macro.getFlag("world", "cardID"));
-          }
+          const macro = game.macros.get(li.data("macro-id"));
+          EMITTER.sendRevealCardMsg(game.users.find(el=> el.isGM && el.active).id, macro.getFlag("world", "cardID"));
         }
       },
       {
@@ -337,11 +328,7 @@ export class cardHotbar extends Hotbar {
                 label: "Give",
                 callback: async (html) => {
                   let _to = html.find("#player")[0].value
-                  if(game.user.isGM){
-                    game.decks.giveToPlayer(_to,  macro.getFlag("world", "cardID"));
-                  } else {
-                    EMITTER.sendGiveMsg(getGmId(), _to, game.macros.get(li.data("macro-id")).getFlag("world", "cardID"));
-                  }
+                  EMITTER.sendGiveMsg(getGmId(), _to, game.macros.get(li.data("macro-id")).getFlag("world", "cardID"));
                   let slot = this.populator.macroMap.indexOf(macro.id)
                   await this.populator.chbUnsetMacro(slot);
                 }
@@ -396,13 +383,7 @@ export class cardHotbar extends Hotbar {
           const macro = game.macros.get(li.data("macro-id"));
           const index = li.data("slot");
           try{
-            //const mCardId = macro.data.flags.world.cardID
-            //game.decks.getByCard(mCardId).discardCard(mCardId);
-            if(!game.user.isGM){
-              EMITTER.sendDiscardMsg(game.users.find(el => el.isGM && el.data.active).id,  macro.data.flags.world.cardID);
-            } else {
-              game.decks.getByCard(macro.data.flags.world.cardID).discardCard(macro.data.flags.world.cardID)
-            }
+            EMITTER.sendDiscardMsg(game.users.find(el => el.isGM && el.data.active).id,  macro.data.flags.world.cardID);
             await ui.cardHotbar.populator.chbUnsetMacro(index);
           } catch (e) {
             console.error(e)

@@ -118,12 +118,7 @@ function cardHUD(tokenHUD, html) {
                         label: "Give",
                         callback: (html) => __awaiter(this, void 0, void 0, function* () {
                             let _to = html.find("#player")[0].value;
-                            if (game.user.isGM) {
-                                game.decks.giveToPlayer(_to, td.flags[mod_scope].cardID);
-                            }
-                            else {
-                                EMITTER.sendGiveMsg(getGmId(), _to, td.flags[mod_scope].cardID);
-                            }
+                            EMITTER.sendGiveMsg(getGmId(), _to, td.flags[mod_scope].cardID);
                             //delete tile
                             yield canvas.scene.deleteEmbeddedEntity("Tile", td._id);
                         })

@@ -117,11 +117,7 @@ async function cardHUD(tokenHUD, html) {
           label: "Give",
           callback: async (html:any) => {
             let _to = html.find("#player")[0].value
-            if(game.user.isGM){
-              game.decks.giveToPlayer(_to,  td.flags[mod_scope].cardID);
-            } else {
-              EMITTER.sendGiveMsg(getGmId(), _to, td.flags[mod_scope].cardID);
-            }
+            EMITTER.sendGiveMsg(getGmId(), _to, td.flags[mod_scope].cardID);
             //delete tile
             await canvas.scene.deleteEmbeddedEntity("Tile", td._id)
           }

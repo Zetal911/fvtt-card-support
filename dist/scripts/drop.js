@@ -15,32 +15,19 @@ import { getGmId } from './socketListener.js';
 Hooks.once("canvasReady", () => {
     document.getElementById("board").addEventListener("drop", (event) => __awaiter(void 0, void 0, void 0, function* () {
         // Try to extract the data (type + src)
-        let data;
         try {
-            data = JSON.parse(event.dataTransfer.getData("text/plain"));
+            let data = JSON.parse(event.dataTransfer.getData("text/plain"));
             console.log(data);
             if (data.type == "Folder" && game.decks.get(data.id) != undefined && game.user.isGM) {
                 handleDroppedFolder(data.id, event.x, event.y);
             }
             else if (data.type == "JournalEntry" && game.decks.getByCard(data.id) != undefined) {
-                if (game.user.isGM) {
-                    handleDroppedCard(data.id, event.clientX, event.clientY, event.altKey);
-                }
-                else {
-                    EMITTER.sendDropMsg(getGmId(), data.id, event.clientX, event.clientY, event.altKey, "");
-                }
+                EMITTER.sendDropMsg(getGmId(), data.id, event.clientX, event.clientY, event.altKey, "");
             }
             else if (data.type == "Macro" && game.decks.getByCard(game.macros.get(data.id).getFlag(mod_scope, "cardID")) != undefined) {
-                if (game.user.isGM) {
-                    handleDroppedCard(game.macros.get(data.id).getFlag(mod_scope, "cardID"), event.clientX, event.clientY, event.altKey, game.macros.get(data.id).getFlag(mod_scope, "sideUp"));
-                    yield ui['cardHotbar'].populator.chbUnsetMacro(data.cardSlot);
-                    game.macros.get(data.id).delete();
-                }
-                else {
-                    EMITTER.sendDropMsg(getGmId(), game.macros.get(data.id).getFlag(mod_scope, "cardID"), event.clientX, event.clientY, event.altKey, game.macros.get(data.id).getFlag(mod_scope, "sideUp"));
-                    yield ui['cardHotbar'].populator.chbUnsetMacro(data.cardSlot);
-                    game.macros.get(data.id).delete();
-                }
+                EMITTER.sendDropMsg(getGmId(), game.macros.get(data.id).getFlag(mod_scope, "cardID"), event.clientX, event.clientY, event.altKey, game.macros.get(data.id).getFlag(mod_scope, "sideUp"));
+                yield ui['cardHotbar'].populator.chbUnsetMacro(data.cardSlot);
+                game.macros.get(data.id).delete();
             }
         }
         catch (err) {
