@@ -58,34 +58,7 @@ function cardHUD(tokenHUD, html) {
         });
         //Embdded Functions
         const flipCard = (td) => __awaiter(this, void 0, void 0, function* () {
-            //Create New Tile at Current Tile's X & Y
-            let cardEntry = game.journal.get(td.flags[mod_scope].cardID);
-            let newImg = "";
-            if (td.img == cardEntry.data['img']) {
-                // Card if front up, switch to back
-                newImg = cardEntry.getFlag(mod_scope, "cardBack");
-            }
-            else if (td.img == cardEntry.getFlag(mod_scope, "cardBack")) {
-                // Card is back up
-                newImg = cardEntry.data['img'];
-            }
-            else {
-                ui.notifications.error("What you doing m8? Stop breaking my code");
-                return;
-            }
-            Token.create({
-                name: td.name,
-                img: newImg,
-                x: td.x,
-                y: td.y,
-                width: td.width,
-                height: td.height,
-                flags: td.flags,
-                actorId: td.actorId,
-                actorLink: td.actorLink
-            });
-            //Delete this tile
-            canvas.tokens.get(td._id).delete();
+            EMITTER.sendFlipCardMsg(getGmId(), td._id);
         });
         const takeCard = (td) => __awaiter(this, void 0, void 0, function* () {
             EMITTER.sendRemoveCardMsg(getGmId(), td._id);

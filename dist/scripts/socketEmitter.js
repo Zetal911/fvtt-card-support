@@ -56,7 +56,6 @@ export function sendDropMsg(playerID, cardID, x, y, alt, sideUp) {
 }
 export function sendRemoveCardMsg(playerID, tokenID) {
     let msg = new MSG_REMOVECARD(playerID, tokenID);
-    console.log(msg);
     emitMsg(msg);
 }
 export function sendRequestTakeCardMsg(playerID, cardRequester, cardNum) {
@@ -101,6 +100,10 @@ export function sendShuffleBackDiscardMsg(playerID, deckID) {
 }
 export function sendGetAllCardsByDeckMsg(playerID, to, deckID) {
     let msg = new MSG_GETALLCARDSBYDECK(playerID, to, deckID);
+    emitMsg(msg);
+}
+export function sendFlipCardMsg(playerID, tokenID) {
+    let msg = new MSG_FLIPCARD(playerID, tokenID);
     emitMsg(msg);
 }
 //////////////////////////////////////////////////////////////
@@ -449,6 +452,47 @@ export class MSG_GETALLCARDSBYDECK extends MSG_BASE {
                 return game.journal.get(el);
             }).reverse();
             //sendReceiveCardsByDeckMsg(this.to, cards, this.deckID);
+        });
+    }
+}
+export class MSG_FLIPCARD extends MSG_BASE {
+    constructor(playerID, tokenID, type = "FLIPCARD") {
+        super();
+        this.playerID = playerID;
+        this.tokenID = tokenID;
+        this.type = type;
+    }
+    execute() {
+        return __awaiter(this, void 0, void 0, function* () {
+            let td = canvas.tokens.get(this.tokenID).data;
+            //Create New Tile at Current Tile's X & Y
+            let cardEntry = game.journal.get(td.flags[mod_scope].cardID);
+            let newImg = "";
+            if (td.img == cardEntry.data['img']) {
+                // Card if front up, switch to back
+                newImg = cardEntry.getFlag(mod_scope, "cardBack");
+            }
+            else if (td.img == cardEntry.getFlag(mod_scope, "cardBack")) {
+                // Card is back up
+                newImg = cardEntry.data['img'];
+            }
+            else {
+                ui.notifications.error("What you doing m8? Stop breaking my code");
+                return;
+            }
+            Token.create({
+                name: td.name,
+                img: newImg,
+                x: td.x,
+                y: td.y,
+                width: td.width,
+                height: td.height,
+                flags: td.flags,
+                actorId: td.actorId,
+                actorLink: td.actorLink
+            });
+            //Delete this tile
+            canvas.tokens.get(td._id).delete();
         });
     }
 }

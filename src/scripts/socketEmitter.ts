@@ -57,7 +57,6 @@ export function sendDropMsg(playerID: string, cardID: string, x: number, y: numb
 
 export function sendRemoveCardMsg(playerID: string, tokenID: string) {
     let msg:MSG_REMOVECARD = new MSG_REMOVECARD(playerID, tokenID);
-    console.log(msg);
     emitMsg(msg);
 }
 
@@ -113,6 +112,11 @@ export function sendShuffleBackDiscardMsg(playerID: string, deckID: string) {
 
 export function sendGetAllCardsByDeckMsg(playerID: string, to: string, deckID: string) {
     let msg:MSG_GETALLCARDSBYDECK = new MSG_GETALLCARDSBYDECK(playerID, to, deckID);
+    emitMsg(msg);
+}
+
+export function sendFlipCardMsg(playerID: string, tokenID: string) {
+    let msg:MSG_FLIPCARD = new MSG_FLIPCARD(playerID, tokenID);
     emitMsg(msg);
 }
 
@@ -452,6 +456,46 @@ export class MSG_GETALLCARDSBYDECK extends MSG_BASE {
       }).reverse()
       
       //sendReceiveCardsByDeckMsg(this.to, cards, this.deckID);
+  }
+}
+
+export class MSG_FLIPCARD extends MSG_BASE {
+  constructor(
+  public playerID: string,
+  public tokenID: string,
+  public type: string = "FLIPCARD",
+  ) { super(); }
+    
+  public async execute() {
+    let td = canvas.tokens.get(this.tokenID).data;    
+    //Create New Tile at Current Tile's X & Y
+    let cardEntry = game.journal.get(td.flags[mod_scope].cardID)
+    let newImg = "";
+    
+    if(td.img == cardEntry.data['img']){
+      // Card if front up, switch to back
+      newImg = cardEntry.getFlag(mod_scope, "cardBack")
+    } else if(td.img == cardEntry.getFlag(mod_scope, "cardBack")){
+      // Card is back up
+      newImg = cardEntry.data['img']
+    } else { 
+      ui.notifications.error("What you doing m8? Stop breaking my code");
+      return;
+    }
+    Token.create({
+      name: td.name,
+      img: newImg,
+      x: td.x,
+      y: td.y,
+      width: td.width,
+      height: td.height, 
+      flags: td.flags,
+      actorId: td.actorId,
+      actorLink: td.actorLink
+    });
+
+    //Delete this tile
+    canvas.tokens.get(td._id).delete();
   }
 }
 

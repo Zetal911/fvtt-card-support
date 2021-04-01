@@ -58,6 +58,8 @@ Hooks.on("ready", () => {
       receivedMessage = (new EMITTER.MSG_GETALLCARDSBYDECK(data.playerID, data.to, data.deckID));
     } else if (data?.type == "VIEWDISCARD"){
       receivedMessage = (new EMITTER.MSG_VIEWDISCARD(data.playerID, data.deckID, data.cards));
+    } else if (data?.type == "FLIPCARD"){
+      receivedMessage = (new EMITTER.MSG_FLIPCARD(data.playerID, data.tokenID));
     }
     
     if(receivedMessage != null) {

@@ -83,6 +83,9 @@ Hooks.on("ready", () => {
         else if ((data === null || data === void 0 ? void 0 : data.type) == "VIEWDISCARD") {
             receivedMessage = (new EMITTER.MSG_VIEWDISCARD(data.playerID, data.deckID, data.cards));
         }
+        else if ((data === null || data === void 0 ? void 0 : data.type) == "FLIPCARD") {
+            receivedMessage = (new EMITTER.MSG_FLIPCARD(data.playerID, data.tokenID));
+        }
         if (receivedMessage != null) {
             console.log(receivedMessage);
             receivedMessage.execute();
